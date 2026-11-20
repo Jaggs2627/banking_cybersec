@@ -54,8 +54,8 @@ def get_shared_bank_state():
 
 state = get_shared_bank_state()
 
-# Bank SOC Admin Passcode (Change if desired)
-SOC_ADMIN_PASSCODE = "SOC@2026"
+# Bank SOC Admin Passcode 
+SOC_ADMIN_PASSCODE = "F13ld_pr0j3ct"
 
 # Read URL parameter (?site=victim, ?site=hacker, or ?site=bank)
 current_site = st.query_params.get("site", "victim").lower()
@@ -267,7 +267,7 @@ def render_bank_soc():
         st.title("🛡️ SecurePay Bank SOC — Restricted Access")
         st.warning("Authorized Security Operations Center (SOC) Personnel Only. Unauthorized access attempts are blocked.")
         with st.form("soc_login_form"):
-            passcode = st.text_input("Enter Bank SOC Admin Passcode", type="password", placeholder="Hint: SOC@2026")
+            passcode = st.text_input("Enter Bank SOC Admin Passcode", type="password")
             if st.form_submit_button("Authenticate SOC Session"):
                 if passcode == SOC_ADMIN_PASSCODE:
                     st.session_state.soc_authenticated = True
