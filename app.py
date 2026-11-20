@@ -369,8 +369,6 @@ def render_bank_soc():
         st.subheader("📜 Live Security & Transaction Audit Feed")
         if state["logs"]:
             st.dataframe(state["logs"], use_container_width=True, hide_index=True)
-        else:
-            st.caption("Waiting for live transactions from Website 1 (Victim) or Website 2 (Hacker)...")
 
     # -----------------------------------------------------
     # RIGHT (TINY AREAS): LIVE HIGHLIGHTED PERSONAL USERS
