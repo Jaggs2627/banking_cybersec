@@ -13,39 +13,39 @@ def get_shared_bank_state():
                 "pin": "1234",
                 "cvv": "842",
                 "password": "Siddhant123",
-                "biometric_token": "BIO-SIDDHANT-OK",
                 "failed_attempts": 0,
                 "locked_until": None,
                 "last_active_time": None,
                 "last_action_summary": "Idle",
-                "credentials_leaked": False,
-                "leak_reason": ""
+                "leaked_pin": False,
+                "leaked_cvv": False,
+                "leaked_password": False
             },
             "Prithviraj Chavan (ACC-102)": {
                 "balance": 75000.0,
                 "pin": "4321",
                 "cvv": "319",
                 "password": "Pr1thv1r@j123",
-                "biometric_token": "BIO-PRITHVIRAJ-OK",
                 "failed_attempts": 0,
                 "locked_until": None,
                 "last_active_time": None,
                 "last_action_summary": "Idle",
-                "credentials_leaked": False,
-                "leak_reason": ""
+                "leaked_pin": False,
+                "leaked_cvv": False,
+                "leaked_password": False
             },
             "Jagriti Gattani (ACC-103)": {
                 "balance": 32000.0,
                 "pin": "9876",
                 "cvv": "507",
                 "password": "J@gr1t1_l0l",
-                "biometric_token": "BIO-JAGRITI-OK",
                 "failed_attempts": 0,
                 "locked_until": None,
                 "last_active_time": None,
                 "last_action_summary": "Idle",
-                "credentials_leaked": False,
-                "leak_reason": ""
+                "leaked_pin": False,
+                "leaked_cvv": False,
+                "leaked_password": False
             }
         },
         "pending_approvals": [],
@@ -54,7 +54,7 @@ def get_shared_bank_state():
 
 state = get_shared_bank_state()
 
-# Bank SOC Admin Passcode 
+# Bank SOC Admin Passcode
 SOC_ADMIN_PASSCODE = "F13ld_pr0j3ct"
 
 # Read URL parameter (?site=victim, ?site=hacker, or ?site=bank)
@@ -107,10 +107,8 @@ def render_payment_portal(actor_role):
     with top_col1:
         if is_hacker:
             st.title("🕵️ Adversary Attack Terminal")
-            st.caption("Website 2 of 3 — External Attacker Spoofing Customer Payment Gateway")
         else:
             st.title("📱 SecurePay Personal Banking")
-            st.caption("Website 1 of 3 — Legitimate Customer Payment Portal")
     with top_col2:
         st.write("")
         if st.button("🔄 Refresh", use_container_width=True):
@@ -120,23 +118,43 @@ def render_payment_portal(actor_role):
     selected_user = st.selectbox(label_text, list(state["accounts"].keys()))
     account = state["accounts"][selected_user]
 
-    # Hacker-only Phishing Intercept Feed
+    # Hacker-only External OSINT / Social Engineering Traps (No button on Victim's banking app!)
     if is_hacker:
         st.divider()
-        st.subheader("📡 Intercepted Phishing & Recon Feed")
-        if account["credentials_leaked"]:
-            st.error(
-                f"🔓 **HUMAN ERROR EXPLOITED!** Captured stolen credentials for **{selected_user}**:\n\n"
-                f"- **4-Digit PIN:** `{account['pin']}`\n"
-                f"- **Card CVV:** `{account['cvv']}`\n"
-                f"- **Password:** `{account['password']}`\n"
-                f"- **Biometric Status:** Hardware-bound (Cannot be phished remotely!)"
+        st.subheader("🎯 External Social Engineering & OSINT Exploits")
+        st.caption("Bank encryption & MFA are intact. Breaches require exploiting human habits outside the bank app:")
+
+        sc1, sc2, sc3 = st.columns(3)
+        if sc1.button("👀 Shoulder-Surf PIN", use_container_width=True):
+            account["leaked_pin"] = True
+            add_log(selected_user, "Human Error (Public)", "Shoulder Surfing", 0, "PARTIAL LEAK (PIN)", "Victim typed PIN in public view")
+            st.rerun()
+        if sc2.button("📸 Card Photo Leak (CVV)", use_container_width=True):
+            account["leaked_cvv"] = True
+            add_log(selected_user, "Human Error (Card)", "Shared Card Photo", 0, "PARTIAL LEAK (CVV)", "Victim shared debit card image")
+            st.rerun()
+        if sc3.button("🔑 Password Reuse Breach", use_container_width=True):
+            account["leaked_password"] = True
+            add_log(selected_user, "Human Error (Web)", "Credential Stuffing", 0, "PARTIAL LEAK (PASS)", "Victim reused password on external site")
+            st.rerun()
+
+        # Show ONLY the specific single factor leaked—never the whole set automatically
+        leaked_items = []
+        if account["leaked_pin"]:
+            leaked_items.append(f"**4-Digit PIN:** `{account['pin']}` (via shoulder-surfing)")
+        if account["leaked_cvv"]:
+            leaked_items.append(f"**Card CVV:** `{account['cvv']}` (via exposed card image)")
+        if account["leaked_password"]:
+            leaked_items.append(f"**Account Password:** `{account['password']}` (via password reuse)")
+
+        if leaked_items:
+            st.warning(
+                "🔓 **Captured Human-Error Intelligence:**\n\n"
+                + "\n".join(f"- {item}" for item in leaked_items)
+                + "\n\n*Note: SecurePay enforces 2-Factor Authentication. Having only 1 factor is NOT enough without a second human slip-up!*"
             )
         else:
-            st.info(
-                "🔒 **Target is cautious — No leaked credentials intercepted.**\n\n"
-                "You have no stolen PIN/Password. Guessing credentials will trigger the bank's 5-attempt 7-day lockout."
-            )
+            st.info("🛡️ **Zero Intel Available:** Target has made no security mistakes. Brute-forcing will trigger a 7-day lockout after 5 tries.")
 
     st.divider()
     col1, col2 = st.columns(2)
@@ -179,7 +197,7 @@ def render_payment_portal(actor_role):
 
             if auth_method.startswith("1."):
                 if is_hacker:
-                    biometric_verified = st.checkbox("🧬 Attempt Biometric Spoof (Fails without victim's physical device)")
+                    biometric_verified = st.checkbox("🧬 Attempt Biometric Spoof (Blocked without physical hardware)")
                 else:
                     biometric_verified = st.checkbox("👆 Tap to Scan Fingerprint / Face ID (Simulated Biometric)")
             elif auth_method.startswith("2."):
@@ -191,7 +209,6 @@ def render_payment_portal(actor_role):
             submit_payment = st.form_submit_button(btn_label, use_container_width=True)
 
             if submit_payment:
-                # Mark user as actively transacting right now (triggers highlight on Bank SOC)
                 account["last_active_time"] = datetime.now()
 
                 if amount > account["balance"]:
@@ -235,26 +252,6 @@ def render_payment_portal(actor_role):
                             add_log(selected_user, actor_role, auth_method, amount, "FAILED AUTH", fail_note)
                             st.error(f"❌ Authentication Failed! Only **{remaining_tries}** attempts remaining before a 7-day lockout.")
 
-    # Victim-only Human Error Simulator
-    if not is_hacker:
-        st.divider()
-        with st.expander("⚠️ Human Vulnerability Simulator (Phishing / Social Engineering)"):
-            st.write(
-                "In real-world banking security, systems rarely fail on their own—**human error** exposes credentials. "
-                "Click below to simulate the victim accidentally entering their details on a fake KYC/reward link."
-            )
-            col_a, col_b = st.columns(2)
-            if col_a.button("🎣 Fall for Fake KYC Phishing Link"):
-                account["credentials_leaked"] = True
-                account["leak_reason"] = "Victim submitted PIN, CVV & Password on a fake bank KYC SMS link."
-                add_log(selected_user, "Victim (Human Error)", "Phishing Link", 0, "CREDENTIALS LEAKED", account["leak_reason"])
-                st.warning("Credentials leaked! The Hacker terminal can now see this victim's stolen details.")
-
-            if col_b.button("🛡️ Secure Credentials (Reset Leak)"):
-                account["credentials_leaked"] = False
-                account["leak_reason"] = ""
-                st.info("Credentials secured again.")
-
 # ---------------------------------------------------------
 # WEBSITE 3: SECURED BANK SOC & MASTER COMMAND CENTER
 # ---------------------------------------------------------
@@ -281,7 +278,6 @@ def render_bank_soc():
     h_col1, h_col2, h_col3 = st.columns([5, 1, 1])
     with h_col1:
         st.title("🛡️ Bank SOC & Master Command Center")
-        st.caption("Website 3 of 3 — Real-Time Transaction Permission, Fraud Detection & Live User Monitor")
     with h_col2:
         st.write("")
         if st.button("🔄 Refresh Live Feed", use_container_width=True):
@@ -294,7 +290,9 @@ def render_bank_soc():
                 acc["locked_until"] = None
                 acc["last_active_time"] = None
                 acc["last_action_summary"] = "Idle"
-                acc["credentials_leaked"] = False
+                acc["leaked_pin"] = False
+                acc["leaked_cvv"] = False
+                acc["leaked_password"] = False
             state["pending_approvals"].clear()
             state["logs"].clear()
             st.rerun()
@@ -308,15 +306,17 @@ def render_bank_soc():
     # LEFT (LARGE AREA): BANK MONITORING & PERMISSION ENGINE
     # -----------------------------------------------------
     with bank_area:
-        # Top KPIs
         pending_list = [tx for tx in state["pending_approvals"] if tx["status"] == "Pending"]
         locked_count = sum(1 for acc in state["accounts"].values() if check_lock_status(acc)[0])
-        leaked_count = sum(1 for acc in state["accounts"].values() if acc["credentials_leaked"])
+        leaked_count = sum(
+            1 for acc in state["accounts"].values()
+            if (acc["leaked_pin"] or acc["leaked_cvv"] or acc["leaked_password"])
+        )
 
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Pending Permissions", len(pending_list))
         m2.metric("Locked Accounts (7d)", locked_count)
-        m3.metric("Phishing Exposure Alerts", leaked_count)
+        m3.metric("External Exposure Alerts", leaked_count)
         m4.metric("Total Audited Events", len(state["logs"]))
 
         st.subheader("🚦 Live Transaction Permission Queue")
@@ -382,7 +382,6 @@ def render_bank_soc():
             is_locked, _ = check_lock_status(acc)
 
             if active_now:
-                # Highlighted card for users currently doing a payment
                 st.markdown(
                     f"""
                     <div style="border: 3px solid #00E676; background-color: rgba(0, 230, 118, 0.14);
@@ -400,7 +399,6 @@ def render_bank_soc():
                     unsafe_allow_html=True
                 )
             else:
-                # Dimmed compact card for idle users
                 status_badge = "🚨 LOCKED (7D)" if is_locked else "IDLE"
                 border_col = "#FF5252" if is_locked else "#444444"
                 st.markdown(
